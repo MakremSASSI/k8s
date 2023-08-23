@@ -71,3 +71,35 @@ nfs_export_path: "/chemin/vers/repertoire/export"
 
 
 
+---
+- name: Partitionner le nouveau disque, créer un système de fichiers et monter
+  hosts: votre_hote
+  become: true
+  vars:
+    disk_device: /dev/sdb
+    partition_number: 1
+    mount_path: /chemin/vers/votre/point/de/montage
+    filesystem_type: ext4
+  tasks:
+    - name: Partitionner le disque
+      parted:
+        device: "{{ disk_device }}"
+        number: "{{ partition_number }}"
+        state: present
+
+    - name: Créer un système de fichiers {{ filesystem_type }}
+      filesystem:
+        fstype: "{{ filesystem_type }}"
+        dev: "{{ disk_device + partition_number }}"
+
+    - name: Créer le répertoire de montage
+      file:
+        path: "{{ mount_path }}"
+        state: directory
+
+    - name: Monter le disque
+      mount:
+        path: "{{ mount_path }}"
+        src: "{{ disk_device + partition_number }}"
+        fstype: "{{ filesystem_type }}"
+        state: mounted
