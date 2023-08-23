@@ -1,0 +1,29 @@
+---
+- name: Configurer et monter un nouveau disque sur Ubuntu
+  hosts: votre_hote
+  become: true
+  tasks:
+    - name: Partitionner le disque
+      parted:
+        device: /dev/sdb
+        number: 1
+        state: present
+      register: disk_partition_result
+
+    - name: Créer un système de fichiers ext3
+      filesystem:
+        fstype: ext3
+        dev: /dev/sdb1
+      when: disk_partition_result.changed
+
+    - name: Créer le répertoire de montage
+      file:
+        path: /chemin/vers/votre/point/de/montage
+        state: directory
+
+    - name: Monter le disque
+      mount:
+        path: /chemin/vers/votre/point/de/montage
+        src: /dev/sdb1
+        fstype: ext3
+        state: mounted
