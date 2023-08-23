@@ -30,9 +30,19 @@
 
 
 ---
+# vars.yml
+nfs_clients:
+  - 192.168.1.100
+  - 192.168.1.101
+
+nfs_export_path: "/chemin/vers/repertoire/export"
+
+---
 - name: Installer et configurer le serveur NFS
   hosts: votre_hote
   become: true
+  vars_files:
+    - vars.yml
   tasks:
     - name: Installer le serveur NFS
       apt:
@@ -41,14 +51,15 @@
 
     - name: Créer le répertoire d'export NFS
       file:
-        path: /chemin/vers/repertoire/export
+        path: "{{ nfs_export_path }}"
         state: directory
 
     - name: Configurer les exportations NFS
       lineinfile:
         path: /etc/exports
-        line: "/chemin/vers/repertoire/export IP1(rw,sync,no_subtree_check) IP2(rw,sync,no_subtree_check)"
+        line: "{{ nfs_export_path }} {{ item }}(rw,sync,no_subtree_check)"
         state: present
+      with_items: "{{ nfs_clients }}"
       notify: Redémarrer le serveur NFS
 
   handlers:
@@ -56,4 +67,7 @@
       systemd:
         name: nfs-kernel-server
         state: restarted
+
+
+
 
