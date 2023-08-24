@@ -1,0 +1,22 @@
+---
+- name: Installer VSCode sur Ubuntu
+  hosts: votre_groupe_de_machine
+  become: yes
+
+  tasks:
+    - name: Ajouter le dépôt VSCode
+      apt_repository:
+        repo: "deb [arch=amd64] https://packages.microsoft.com/repos/vscode stable main"
+        state: present
+        update_cache: yes
+        filename: vscode
+
+    - name: Importer la clé GPG de Microsoft
+      apt_key:
+        url: "https://packages.microsoft.com/keys/microsoft.asc"
+        state: present
+
+    - name: Installer VSCode
+      apt:
+        name: code
+        state: present
