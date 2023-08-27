@@ -1,0 +1,39 @@
+[gitea]
+gitea_server ansible_host=<IP_DU_SERVEUR>
+
+
+---
+- name: Install Gitea on Kubernetes
+  hosts: gitea
+  become: true
+  tasks:
+    - name: Apply Gitea manifests
+      k8s:
+        state: present
+        definition: "{{ lookup('file', 'gitea-install.yml') }}"
+        wait: yes
+      tags:
+        - gitea
+
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gitea
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gitea
+  template:
+    metadata:
+      labels:
+        app: gitea
+    spec:
+      containers:
+        - name: gitea
+          image: gitea/gitea:latest  # Utilisez la version souhaitée
+          ports:
+            - containerPort: 3000
