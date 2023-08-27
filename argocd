@@ -1,0 +1,38 @@
+---
+- name: Install ArgoCD on Kubernetes
+  hosts: argocd
+  become: true
+  tasks:
+    - name: Apply ArgoCD manifests
+      k8s:
+        state: present
+        definition: "{{ lookup('file', 'argocd-install.yml') }}"
+        wait: yes
+      tags:
+        - argocd
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argocd-server
+  namespace: argocd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: argocd-server
+  template:
+    metadata:
+      labels:
+        app: argocd-server
+    spec:
+      containers:
+        - name: argocd-server
+          image: argoproj/argocd:v2.1.2  # Utilisez la version souhaitée
+          command:
+            - argocd-server
+          ports:
+            - containerPort: 8080
+      serviceAccountName: argocd-server
+
