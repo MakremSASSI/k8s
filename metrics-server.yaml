@@ -1,0 +1,40 @@
+---
+- name: Configurer kubelet et approuver les certificats
+  hosts: kube_nodes
+  become: yes
+  tasks:
+    - name: Modifier la configmap kubelet-config-1.23
+      command: kubectl -n kube-system edit configmaps kubelet-config-1.23
+      ignore_errors: yes
+      register: configmap_result
+    - name: Ajouter la configuration Kubelet
+      command: echo '    kind: KubeletConfiguration\n    serverTLSBootstrap: true' >> /tmp/kubelet-config.yaml
+      when: "'kind: KubeletConfiguration' in configmap_result.stdout"
+    - name: Copier la configuration sur les nœuds
+      copy:
+        src: /tmp/kubelet-config.yaml
+        dest: /var/lib/kubelet/config.yaml
+      when: "'kind: KubeletConfiguration' in configmap_result.stdout"
+    - name: Redémarrer le service kubelet
+      service:
+        name: kubelet
+        state: restarted
+      when: "'kind: KubeletConfiguration' in configmap_result.stdout"
+
+- name: Approuver les certificats en attente
+  hosts: k8s_master
+  become: yes
+  tasks:
+    - name: Obtenir la liste des certificats en attente
+      shell: kubectl get csr | grep Pending | awk '{print $1}'
+      register: pending_certificates
+    - name: Approuver les certificats en attente
+      shell: kubectl certificate approve {{ item }}
+      with_items: "{{ pending_certificates.stdout_lines }}"
+
+- name: Installer le composant Metrics Server
+  hosts: kube_master
+  become: yes
+  tasks:
+    - name: Télécharger et appliquer les composants Metrics Server
+      command: kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
