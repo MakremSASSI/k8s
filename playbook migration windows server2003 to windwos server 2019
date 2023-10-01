@@ -1,0 +1,50 @@
+---
+- name: Mise à jour de Windows Server
+  hosts: windows2003
+  become: yes
+  tasks:
+    - name: Arrêter le service Windows Update
+      win_service:
+        name: wuauserv
+        state: stopped
+      ignore_errors: yes
+
+    - name: Désactiver Windows Update
+      win_shell: Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU' -Name 'NoAutoUpdate' -Value 1 -Type DWord
+      ignore_errors: yes
+
+    - name: Télécharger et installer les mises à jour nécessaires
+      win_shell: Install-WindowsUpdate -AcceptAll -AutoReboot
+      ignore_errors: yes
+
+    - name: Redémarrer le serveur après les mises à jour
+      win_reboot:
+        reboot_timeout: 600
+      ignore_errors: yes
+
+    - name: Installer les rôles et fonctionnalités Windows Server 2019
+      win_feature:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - File-Services
+        - Web-Server
+        - DNS
+        - Active-Directory-Domain-Services
+      ignore_errors: yes
+
+    - name: Copier les données applicatives et les fichiers de configuration
+      win_copy:
+        src: /chemin/vers/donnees_applicatives
+        dest: C:\chemin\vers\nouveau\serveur
+      ignore_errors: yes
+
+    - name: Mettre à jour les applications tierces (à faire manuellement)
+      win_shell: |
+        # Commandes pour mettre à jour les applications tierces
+      ignore_errors: yes
+
+    - name: Redémarrer le serveur après la migration
+      win_reboot:
+        reboot_timeout: 600
+      ignore_errors: yes
