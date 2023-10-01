@@ -1,0 +1,30 @@
+ssh-keygen -t rsa
+ssh-copy-id user@10.0.0.0
+---
+- name: Mise à niveau de CentOS 7 vers CentOS 8
+  hosts: votre_serveur
+  become: yes  # Cette option permet de devenir l'utilisateur root pour la mise à niveau
+
+  tasks:
+    - name: Installer le gestionnaire de paquets DNF
+      yum:
+        name: dnf
+        state: present
+
+    - name: Mise à jour du système CentOS 7
+      command: dnf -y --releasever=8 --allowerasing --setopt=deltarpm=false distro-sync
+      args:
+        creates: /var/run/reboot-required
+      changed_when: false
+
+    - name: Redémarrer le serveur pour appliquer les mises à niveau
+      command: shutdown -r now
+      async: 0
+      poll: 0
+      ignore_errors: yes
+
+    - name: Attente du redémarrage
+      wait_for_connection:
+        delay: 30
+        timeout: 300
+
